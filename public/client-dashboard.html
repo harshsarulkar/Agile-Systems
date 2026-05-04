@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Client Command - Executive PO Matrix</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            /* EXQUISITE OBSIDIAN & EMERALD THEME */
+            --bg-color: #06080f;
+            --bg-gradient: radial-gradient(circle at top right, #111827 0%, #06080f 50%, #020408 100%);
+            --surface: rgba(15, 23, 42, 0.6);
+            --border: rgba(255, 255, 255, 0.05);
+            --border-light: rgba(255, 255, 255, 0.1);
+
+            --primary: #10b981; /* Emerald */
+            --primary-hover: #059669;
+            --secondary: #3b82f6; /* Sapphire */
+            --accent: #8b5cf6; /* Amethyst */
+
+            --text-main: #f8fafc;
+            --text-muted: #64748b;
+
+            --high-pri: #f43f5e; --med-pri: #f59e0b; --low-pri: #0ea5e9; --status-done: #10b981;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            background-color: var(--bg-color);
+            background-image:
+                    radial-gradient(circle at 15% 50%, rgba(16, 185, 129, 0.03), transparent 25%),
+                    radial-gradient(circle at 85% 30%, rgba(59, 130, 246, 0.03), transparent 25%),
+                    var(--bg-gradient);
+            background-attachment: fixed;
+            color: var(--text-main); font-family: 'Inter', sans-serif;
+            min-height: 100vh; display: flex; flex-direction: column; overflow-x: hidden;
+        }
+
+        ::-webkit-scrollbar { width: 6px; height: 6px; } ::-webkit-scrollbar-track { background: transparent; } ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); border-radius: 10px; }
+
+        header { background: rgba(6, 8, 15, 0.8); backdrop-filter: blur(20px); border-bottom: 1px solid var(--border); padding: 16px 32px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 50; box-shadow: 0 4px 30px rgba(0,0,0,0.5); }
+        .header-title { font-weight: 800; font-size: 20px; letter-spacing: 2px; color: #fff; text-transform: uppercase; display: flex; align-items: center; gap: 12px; }
+        .header-title::before { content: ''; display: block; width: 8px; height: 24px; background: linear-gradient(to bottom, var(--primary), var(--secondary)); border-radius: 4px; box-shadow: 0 0 15px var(--primary); }
+
+        .header-controls { display: flex; align-items: center; gap: 16px; }
+        .nav-icon-btn { background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border); color: var(--text-main); border-radius: 8px; height: 40px; padding: 0 16px; display: flex; align-items: center; gap: 8px; justify-content: center; cursor: pointer; transition: all 0.3s; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;}
+        .nav-icon-btn:hover { background: rgba(255, 255, 255, 0.08); border-color: var(--border-light); transform: translateY(-2px); }
+        .btn-ai { border-color: rgba(59, 130, 246, 0.3); color: var(--secondary); background: rgba(59, 130, 246, 0.05); }
+        .btn-ai:hover { border-color: var(--secondary); background: rgba(59, 130, 246, 0.15); box-shadow: 0 5px 15px rgba(59, 130, 246, 0.3); color: #fff;}
+
+        .user-info { font-size: 14px; display: flex; gap: 20px; align-items: center; border-left: 1px solid var(--border); padding-left: 24px;} .user-details { text-align: right; } .user-name { font-weight: 700; color: #ffffff; letter-spacing: 0.5px; } .user-status { font-size: 11px; color: var(--text-muted); display: flex; align-items: center; gap: 6px; justify-content: flex-end; margin-top: 4px; font-weight: 600; text-transform: uppercase;} .status-dot-small { width: 6px; height: 6px; background: var(--status-done); border-radius: 50%; box-shadow: 0 0 10px var(--status-done); }
+        .logout-btn { background: transparent; border: 1px solid rgba(244, 63, 94, 0.3); color: var(--high-pri); padding: 8px 16px; border-radius: 8px; cursor: pointer; font-size: 12px; font-weight: 600; transition: all 0.3s; } .logout-btn:hover { background: rgba(244, 63, 94, 0.1); border-color: var(--high-pri); }
+
+        .main-container { padding: 40px 32px; max-width: 1600px; margin: 0 auto; width: 100%; flex-grow: 1; display: flex; flex-direction: column; gap: 32px; }
+
+        /* 3-Column Executive Widgets */
+        .top-widgets { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
+        .widget-card { background: linear-gradient(180deg, rgba(30, 41, 59, 0.4) 0%, rgba(15, 23, 42, 0.6) 100%); backdrop-filter: blur(20px); border: 1px solid var(--border); border-radius: 16px; padding: 32px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); transition: transform 0.3s, border-color 0.3s; display: flex; flex-direction: column; justify-content: center;}
+        .widget-card:hover { border-color: var(--border-light); transform: translateY(-4px); }
+        .widget-title { font-size: 12px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 16px;}
+        .widget-value { font-size: 42px; font-weight: 800; color: #ffffff; letter-spacing: -1px; display: flex; align-items: baseline; gap: 8px;}
+        .timer-sub { font-size: 13px; color: var(--text-muted); margin-top: 8px; font-weight: 500;}
+
+        /* Executive Analytics */
+        .analytics-row { display: grid; grid-template-columns: 2fr 1fr; gap: 24px; }
+        .chart-panel { background: rgba(15, 23, 42, 0.4); backdrop-filter: blur(20px); border: 1px solid var(--border); border-radius: 16px; padding: 32px; box-shadow: 0 8px 25px rgba(0,0,0,0.2); display: flex; flex-direction: column; }
+        .chart-wrapper { position: relative; height: 320px; width: 100%; margin-top: 24px; display: flex; justify-content: center; align-items: center;}
+
+        /* Refined Forms */
+        .toolbar-panel { background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(20px); border: 1px solid var(--border); border-top: 4px solid var(--secondary); border-radius: 16px; padding: 32px; display: flex; flex-direction: column; gap: 20px; box-shadow: 0 8px 25px rgba(0,0,0,0.3); }
+        .form-row { display: flex; gap: 20px; flex-wrap: wrap; }
+        .form-group { display: flex; flex-direction: column; gap: 10px; flex: 1; min-width: 150px; position: relative; }
+        .form-group label { font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;}
+        input, select { background: rgba(0,0,0,0.3); border: 1px solid var(--border); color: #ffffff; padding: 14px 16px; border-radius: 8px; outline: none; font-size: 14px; transition: all 0.3s; }
+        input:focus, select:focus { border-color: var(--secondary); background: rgba(0,0,0,0.5); box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1); }
+
+        .btn { padding: 14px 24px; border-radius: 8px; font-weight: 700; font-size: 13px; cursor: pointer; border: none; transition: all 0.3s; display: inline-flex; align-items: center; justify-content: center; gap: 8px; letter-spacing: 0.5px; text-transform: uppercase;}
+        .btn-primary { background: var(--secondary); color: white; box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3); }
+        .btn-primary:hover { background: #2563eb; transform: translateY(-2px); box-shadow: 0 8px 25px rgba(59, 130, 246, 0.5); }
+        .btn-outline { background: rgba(255,255,255,0.03); border: 1px solid var(--border-light); color: var(--text-main); }
+        .btn-outline:hover { background: rgba(255,255,255,0.08); transform: translateY(-2px);}
+
+        /* Sleek Kanban */
+        .kanban { display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px; align-items: start; padding-bottom: 40px; }
+        .column { background: rgba(15, 23, 42, 0.3); border-radius: 16px; padding: 20px; min-height: 500px; border: 1px solid var(--border); display: flex; flex-direction: column; gap: 16px; }
+        .column-header { font-weight: 700; font-size: 12px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; padding-bottom: 12px; border-bottom: 1px solid var(--border); }
+        .col-count { background: rgba(255,255,255,0.05); color: #ffffff; padding: 4px 12px; border-radius: 12px; font-size: 12px; font-weight: 800; border: 1px solid var(--border);}
+
+        .task-card { background: rgba(30, 41, 59, 0.4); backdrop-filter: blur(10px); padding: 20px; border-radius: 12px; border: 1px solid var(--border); transition: all 0.3s ease; display: flex; flex-direction: column; gap: 14px; cursor: pointer; position: relative; }
+        .task-card:hover { transform: translateY(-4px); box-shadow: 0 10px 25px rgba(0,0,0,0.3); border-color: var(--border-light); background: rgba(30, 41, 59, 0.6); }
+        .task-title { font-weight: 600; font-size: 14px; color: #ffffff; line-height: 1.5; letter-spacing: 0.2px;}
+
+        .badges { display: flex; gap: 8px; flex-wrap: wrap; }
+        .badge { font-size: 10px; padding: 4px 10px; border-radius: 4px; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; border: 1px solid transparent;}
+        .badge-pts { background: rgba(255,255,255,0.03); color: var(--text-muted); border-color: var(--border);}
+
+        .assignee-row { display: flex; align-items: center; gap: -8px; }
+        .assignee-avatar { width: 26px; height: 26px; border-radius: 50%; background: var(--secondary); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; border: 2px solid var(--bg-color); margin-left: -8px; text-transform: uppercase; }
+        .assignee-avatar:first-child { margin-left: 0; }
+
+        .task-actions { display: flex; gap: 8px; margin-top: 8px; }
+        .btn-action { flex: 1; padding: 8px; font-size: 11px; font-weight: 700; border-radius: 6px; cursor: pointer; border: 1px solid var(--border); background: rgba(0,0,0,0.2); color: var(--text-muted); transition: all 0.2s; display: flex; justify-content: center; align-items: center; text-transform: uppercase; letter-spacing: 0.5px;}
+        .btn-action:hover { background: var(--secondary); border-color: var(--secondary); color: #ffffff; }
+
+        /* Modals */
+        .modal-overlay { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0, 0, 0, 0.8); backdrop-filter: blur(10px); z-index:1100; align-items:center; justify-content:center; opacity: 0; transition: opacity 0.3s; } .modal-overlay.active { display: flex; opacity: 1; }
+        .modal-box { background: rgba(15, 23, 42, 0.95); padding: 40px; border-radius: 16px; width: 100%; max-width: 600px; border: 1px solid var(--border-light); box-shadow: 0 20px 50px rgba(0,0,0,0.5); transform: scale(0.95); transition: transform 0.3s ease; } .modal-overlay.active .modal-box { transform: scale(1); }
+        .checkbox-container { margin: 20px 0 32px 0; max-height: 250px; overflow-y: auto; display:flex; flex-direction:column; gap:12px; background: rgba(0,0,0,0.2); padding: 20px; border-radius: 8px; border: 1px solid var(--border);}
+        .checkbox-label { display:flex; align-items:center; gap:12px; font-size:13px; cursor:pointer; color: var(--text-main); font-weight: 500; background: rgba(0,0,0,0.3); padding: 12px 16px; border-radius: 8px; border: 1px solid var(--border); transition: all 0.2s;}
+        .checkbox-label:hover { border-color: var(--secondary); background: rgba(59, 130, 246, 0.05); }
+        .checkbox-label input { width: 16px; height: 16px; accent-color: var(--secondary); cursor: pointer;}
+
+        .archive-list { display: flex; flex-direction: column; gap: 12px; max-height: 400px; overflow-y: auto; padding-right: 10px;}
+        .archive-item { display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.2); border: 1px solid var(--border); padding: 16px; border-radius: 8px; transition: background 0.2s;}
+        .archive-item:hover { background: rgba(0,0,0,0.4); border-color: var(--border-light); }
+
+        .standup-text { width: 100%; background: rgba(0,0,0,0.3); border: 1px solid var(--border); color: #fff; padding: 20px; border-radius: 8px; min-height: 300px; font-family: 'JetBrains Mono', monospace; font-size: 13px; line-height: 1.6; resize: none; margin-top: 24px; outline: none; }
+        .standup-text:focus { border-color: var(--secondary); box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1); }
+    </style>
+</head>
+<body>
+
+<header>
+    <div class="header-title">Executive PO Matrix</div>
+    <div class="header-controls">
+        <button class="nav-icon-btn btn-ai" onclick="generateStandup()">
+            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"></path></svg>
+            Auto-Standup
+        </button>
+        <button class="nav-icon-btn" onclick="window.location.href='/chat.html'">
+            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+            Comm-Link
+        </button>
+        <div class="user-info">
+            <div class="user-details"><div id="profile-name" class="user-name">Loading...</div><div class="user-status"><div class="status-dot-small"></div>Client Authority</div></div>
+            <button class="logout-btn" onclick="logout()">Exit System</button>
+        </div>
+    </div>
+</header>
+
+<div class="main-container">
+
+    <div class="top-widgets">
+        <div class="widget-card">
+            <div class="widget-title">Delivery Progress</div>
+            <div id="velocity-val" class="widget-value" style="color: var(--primary);">0%</div>
+            <div class="timer-sub" id="points-ratio">0 / 0 Points Verified</div>
+        </div>
+        <div class="widget-card">
+            <div class="widget-title">Scope Integrity</div>
+            <div id="scope-val" class="widget-value" style="color: var(--status-done);">Stable</div>
+            <div class="timer-sub" id="scope-subtext">Current Active Load: 0 Pts</div>
+        </div>
+        <div class="widget-card">
+            <div class="widget-title">AI Confidence Score</div>
+            <div id="ai-pred-val" class="widget-value" style="color: var(--accent);">--%</div>
+            <div class="timer-sub" id="ai-pred-sub">Analyzing telemetry...</div>
+        </div>
+    </div>
+
+    <div class="analytics-row">
+        <div class="chart-panel">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                <div>
+                    <div style="font-size: 14px; font-weight: 700; color: #fff; margin-bottom: 4px;">Release Burn-Up Trajectory</div>
+                    <div style="color: var(--text-muted); font-size: 12px;">Scope Expansion vs. Verified Delivery</div>
+                </div>
+                <div style="text-align: right;">
+                    <div id="expected-completion-date" style="color: var(--secondary); font-family: 'JetBrains Mono', monospace; font-weight: 800; font-size: 16px;">--</div>
+                    <div style="color: var(--text-muted); font-size: 10px; text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px;">Expected Delivery Date</div>
+                </div>
+            </div>
+            <div class="chart-wrapper"><canvas id="burnupChart"></canvas></div>
+        </div>
+
+        <div class="chart-panel">
+            <div style="font-size: 14px; font-weight: 700; color: #fff; margin-bottom: 4px;">Value Distribution</div>
+            <div style="color: var(--text-muted); font-size: 12px;">Active Requirements by Priority</div>
+            <div class="chart-wrapper"><canvas id="distributionChart"></canvas></div>
+        </div>
+    </div>
+
+    <div class="toolbar-panel">
+        <div style="font-weight: 800; color: #fff; font-size: 14px; text-transform: uppercase; letter-spacing: 1px;">Inject New Requirement (Change Request)</div>
+        <div class="form-row">
+            <div class="form-group" style="flex: 2;"><label>User Story</label><input type="text" id="title" placeholder="As a user, I want to..."></div>
+            <div class="form-group" style="flex: 0.5; min-width: 80px;"><label>Pts</label><input type="number" id="points" placeholder="0"></div>
+            <div class="form-group" style="flex: 1;"><label>Requested Deadline</label><input type="datetime-local" id="deadline"></div>
+            <div class="form-group" style="flex: 1;"><label>Business Value</label><select id="priority"><option value="Low">Low / Future</option><option value="Medium" selected>Medium / Next Release</option><option value="High">High / Critical</option></select></div>
+        </div>
+        <div class="form-row" style="align-items: flex-end;">
+            <div class="form-group" style="flex: 2;"><label>Acceptance Criteria Details</label><input type="text" id="desc" placeholder="Specific technical or business requirements..."></div>
+            <div class="form-group" style="flex: 1;"><label>Dependency (Blocked By)</label><select id="blocked-by"><option value="">None (Independent)</option></select></div>
+            <div class="form-group" style="flex: 1;"><label>Target Phase</label><select id="task-status"><option value="Backlog" selected>Product Backlog</option><option value="To Do">Current Sprint</option></select></div>
+            <button class="btn btn-primary" onclick="submitRequirement()" style="height: 46px;">Submit Request</button>
+        </div>
+    </div>
+
+    <div class="kanban">
+        <div class="column"><div class="column-header">Product Backlog <span class="col-count" id="count-backlog">0</span></div><div id="backlog-list" style="display:flex; flex-direction:column; gap:12px;"></div></div>
+        <div class="column"><div class="column-header">Sprint Staging <span class="col-count" id="count-todo">0</span></div><div id="todo-list" style="display:flex; flex-direction:column; gap:12px;"></div></div>
+        <div class="column"><div class="column-header">In Development <span class="col-count" id="count-inprogress">0</span></div><div id="inprogress-list" style="display:flex; flex-direction:column; gap:12px;"></div></div>
+        <div class="column" style="background: rgba(16, 185, 129, 0.05); border-color: rgba(16, 185, 129, 0.2);"><div class="column-header" style="color: var(--primary);">Awaiting Your Sign-Off <span class="col-count" id="count-done" style="background: rgba(16, 185, 129, 0.2); color: var(--primary); border-color: rgba(16, 185, 129, 0.4);">0</span></div><div id="done-list" style="display:flex; flex-direction:column; gap:12px;"></div><button class="btn btn-outline" style="margin-top: 16px; width: 100%; border-style: dashed;" onclick="openArchiveModal()">View Archives</button></div>
+    </div>
+</div>
+
+<div id="standup-modal" class="modal-overlay"><div class="modal-box"><div style="display: flex; justify-content: space-between; align-items: center;"><div><div style="font-size: 20px; font-weight: 800; color: #fff;">Automated Daily Briefing</div><div style="color: var(--secondary); font-size: 12px; margin-top: 4px; font-weight: 600; text-transform: uppercase;">AI Synthesized Report</div></div><button style="background: transparent; border: none; color: var(--text-muted); cursor: pointer;" onclick="closeModal('standup-modal')"><svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button></div><textarea id="standup-output" class="standup-text" readonly></textarea><div style="display: flex; gap: 16px; margin-top: 24px;"><button class="btn btn-outline" style="flex: 1;" onclick="closeModal('standup-modal')">Close</button><button class="btn btn-primary" style="flex: 1;" onclick="copyStandup()">Copy Report</button></div></div></div>
+
+<div id="dod-modal" class="modal-overlay"><div class="modal-box"><div style="font-size: 20px; font-weight: 800; color: #fff; margin-bottom: 8px;">Final Authorization</div><div style="color: var(--text-muted); font-size: 13px; margin-bottom: 24px; line-height: 1.5;">Immutable Protocol: Verify criteria to permanently archive this objective.</div><div style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 32px;"><label class="checkbox-label"><input type="checkbox" class="dod-check" onchange="validateDoD()"> Business Acceptance Criteria Fully Met</label><label class="checkbox-label"><input type="checkbox" class="dod-check" onchange="validateDoD()"> Deployment Verified in Staging</label></div><div style="display: flex; gap: 16px;"><button class="btn btn-outline" style="flex: 1;" onclick="closeDoDModal()">Cancel</button><button id="btn-confirm-dod" class="btn btn-primary" style="flex: 2;" disabled onclick="executeDoD()">Authorize</button></div></div></div>
+
+<div id="archive-modal" class="modal-overlay"><div class="modal-box"><div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;"><div><div style="font-size: 20px; font-weight: 800; color: #fff;">Operation Archives</div><div style="color: var(--text-muted); font-size: 12px; margin-top: 4px;">Review past outcomes or restore to Backlog.</div></div><button style="background: transparent; border: none; color: var(--text-muted); cursor: pointer;" onclick="closeModal('archive-modal')"><svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button></div><div id="archive-list-container" class="archive-list"></div></div></div>
+
+<script>
+    const API = 'http://127.0.0.1:5000/api/tasks';
+    const currentUserName = sessionStorage.getItem('commanderName') || 'Client';
+    if(sessionStorage.getItem('commanderRole') !== 'Client') { window.location.href = '/dashboard.html'; }
+
+    let burnupChartObj; let distributionChart;
+    let currentActiveSprintPoints = 0; let pendingDoDTaskId = null; let globalTasksData = [];
+
+    function escapeQuotes(str) { return str.replace(/'/g, "\\'").replace(/"/g, '&quot;'); }
+    function logout() { sessionStorage.clear(); window.location.href = '/'; }
+    function closeModal(id) { document.getElementById(id).classList.remove('active'); }
+    function openModal(id) { document.getElementById(id).classList.add('active'); }
+    function openArchiveModal() { openModal('archive-modal'); }
+
+    // --- BULLETPROOF CHARTS ---
+    function initCharts() {
+        Chart.defaults.font.family = 'Inter'; Chart.defaults.color = '#64748b';
+
+        // Burnup Line Chart
+        burnupChartObj = new Chart(document.getElementById('burnupChart').getContext('2d'), {
+            type: 'line',
+            data: {
+                labels: ['S1', 'S2', 'S3', 'Current', 'Projected'],
+                datasets: [
+                    { label: 'Total Scope', data: [0, 0, 0, 0, 0], borderColor: '#f43f5e', backgroundColor: 'rgba(244, 63, 94, 0.05)', borderWidth: 2, tension: 0.1, fill: true, pointBackgroundColor: '#f43f5e' },
+                    { label: 'Completed Value', data: [0, 0, 0, 0, null], borderColor: '#10b981', borderWidth: 3, tension: 0.3, pointBackgroundColor: '#10b981', pointRadius: 4 },
+                    { label: 'Trajectory', data: [null, null, null, 0, 0], borderColor: '#3b82f6', borderDash: [4, 4], borderWidth: 2, tension: 0 }
+                ]
+            },
+            options: { responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false }, plugins: { legend: { position: 'top', labels: { usePointStyle: true, boxWidth: 8, color: '#f8fafc' } } }, scales: { y: { suggestedMax: 40, beginAtZero: true, grid: { color: 'rgba(255,255,255,0.03)' } }, x: { grid: { color: 'rgba(255,255,255,0.03)' } } } }
+        });
+
+        // Pie Chart with empty fallback state
+        distributionChart = new Chart(document.getElementById('distributionChart').getContext('2d'), {
+            type: 'doughnut',
+            data: { labels: ['Empty'], datasets: [{ data: [1], backgroundColor: ['rgba(255,255,255,0.05)'], borderWidth: 0 }] },
+            options: { responsive: true, maintainAspectRatio: false, cutout: '75%', plugins: { legend: { position: 'right', labels: { color: '#f8fafc', padding: 15, usePointStyle: true } } } }
+        });
+    }
+
+    function updateCharts(totalScope, donePoints, highC, medC, lowC) {
+        // Safe Update Pie Chart
+        if ((highC + medC + lowC) === 0) {
+            distributionChart.data.datasets[0].data = [1];
+            distributionChart.data.datasets[0].backgroundColor = ['rgba(255,255,255,0.05)'];
+            distributionChart.data.labels = ['No Active Tasks'];
+        } else {
+            distributionChart.data.datasets[0].data = [highC, medC, lowC];
+            distributionChart.data.datasets[0].backgroundColor = ['#f43f5e', '#f59e0b', '#0ea5e9'];
+            distributionChart.data.labels = ['High', 'Medium', 'Low'];
+        }
+        distributionChart.update();
+
+        // Safe Update Burnup
+        let safeScope = totalScope === 0 ? 20 : totalScope;
+        const pastScope = safeScope > 20 ? safeScope - 20 : safeScope;
+        const pastDone = donePoints > 15 ? donePoints - 15 : 0;
+
+        burnupChartObj.data.datasets[0].data = [pastScope * 0.8, pastScope * 0.9, pastScope, totalScope, totalScope];
+        burnupChartObj.data.datasets[1].data = [pastDone * 0.3, pastDone * 0.6, pastDone * 0.8, donePoints, null];
+        burnupChartObj.data.datasets[2].data = [null, null, null, donePoints, totalScope];
+        burnupChartObj.update();
+
+        const remaining = totalScope - donePoints; const velocity = 15;
+        if (remaining <= 0 && totalScope > 0) {
+            document.getElementById('expected-completion-date').innerText = "Delivered";
+            document.getElementById('expected-completion-date').style.color = "var(--primary)";
+        } else if (totalScope === 0) {
+            document.getElementById('expected-completion-date').innerText = "--";
+        } else {
+            const weeksRemaining = Math.ceil(remaining / velocity);
+            const targetDate = new Date(); targetDate.setDate(targetDate.getDate() + (weeksRemaining * 7));
+            document.getElementById('expected-completion-date').innerText = targetDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+            document.getElementById('expected-completion-date').style.color = "var(--secondary)";
+        }
+    }
+
+    // --- AI LOGIC ---
+    function runAIPrediction(donePoints) {
+        const valEl = document.getElementById('ai-pred-val'); const subEl = document.getElementById('ai-pred-sub');
+        const total = currentActiveSprintPoints + donePoints;
+
+        if (total === 0) { valEl.innerText = "--%"; subEl.innerText = "Awaiting operations..."; valEl.style.color = "var(--text-main)"; return; }
+
+        let baseCompletion = (donePoints / total) * 100; let penalty = (currentActiveSprintPoints > 40) ? 15 : 0;
+        let confidence = Math.max(5, Math.min(99, baseCompletion + 25 - penalty));
+
+        valEl.innerText = `${Math.round(confidence)}%`;
+        if(confidence >= 75) { valEl.style.color = 'var(--primary)'; subEl.innerText = 'High confidence of successful delivery.'; }
+        else if(confidence >= 40) { valEl.style.color = 'var(--med-pri)'; subEl.innerText = 'Moderate risk of scope breach detected.'; }
+        else { valEl.style.color = 'var(--high-pri)'; subEl.innerText = 'CRITICAL: Delivery failure imminent.'; }
+    }
+
+    function generateStandup() {
+        if (!globalTasksData || globalTasksData.length === 0) { alert("No data available for standup synthesis."); return; }
+        const doneTasks = globalTasksData.filter(t => t.status === 'Archived' || t.status === 'Done');
+        const activeTasks = globalTasksData.filter(t => t.status === 'In Progress');
+        const blockedTasks = globalTasksData.filter(t => t.blockedBy);
+
+        let report = `[EXECUTIVE BRIEFING - ${new Date().toLocaleDateString()}]\nClient / PO: ${currentUserName}\n------------------------------------------\n\n✅ VERIFIED / COMPLETED:\n`;
+        if (doneTasks.length === 0) report += `  - No operations verified yet.\n`; else doneTasks.forEach(t => report += `  - ${t.title} (${t.storyPoints||0} Pts)\n`);
+
+        report += `\n🚀 ACTIVE IN PIPELINE:\n`;
+        if (activeTasks.length === 0) report += `  - No operations currently in progress by devs.\n`; else activeTasks.forEach(t => report += `  - ${t.title} [Assigned: ${t.assignees && t.assignees.length>0 ? t.assignees.join(', ') : 'Unassigned'}]\n`);
+
+        report += `\n⛔ CRITICAL BLOCKERS:\n`;
+        if (blockedTasks.length === 0) report += `  - System nominal. No dependencies blocking flow.\n`;
+        else { blockedTasks.forEach(t => { const blocker = globalTasksData.find(b => b._id === t.blockedBy); if (blocker && blocker.status !== 'Archived' && blocker.status !== 'Done') { report += `  - [LOCKED] ${t.title} --> Waiting on: ${blocker.title}\n`; } }); }
+
+        document.getElementById('standup-output').value = report; openModal('standup-modal');
+    }
+
+    function copyStandup() { document.getElementById('standup-output').select(); document.execCommand('copy'); alert("Standup copied to clipboard."); }
+
+    async function submitRequirement() {
+        const payload = { title: document.getElementById('title').value, description: document.getElementById('desc').value, storyPoints: Number(document.getElementById('points').value) || 0, priority: document.getElementById('priority').value, deadline: document.getElementById('deadline').value, status: document.getElementById('task-status').value, type: "Change Request", createdBy: currentUserName, assignees: [], blockedBy: document.getElementById('blocked-by').value || null };
+        if(!payload.title) return alert("Title is required to inject a requirement.");
+
+        await fetch(`${API}/add`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload) });
+        document.getElementById('title').value = ''; document.getElementById('desc').value = ''; document.getElementById('points').value = ''; document.getElementById('deadline').value = ''; document.getElementById('blocked-by').value = '';
+        loadTasks();
+    }
+
+    async function changeTaskStatus(id, newStatus) { await fetch(`${API}/update/${id}`, { method: 'PATCH', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ status: newStatus }) }); loadTasks(); }
+
+    function openDoDModal(id) { pendingDoDTaskId = id; document.querySelectorAll('.dod-check').forEach(cb => cb.checked = false); validateDoD(); openModal('dod-modal'); }
+    function closeDoDModal() { closeModal('dod-modal'); pendingDoDTaskId = null; }
+    function validateDoD() { const checkboxes = document.querySelectorAll('.dod-check'); document.getElementById('btn-confirm-dod').disabled = !Array.from(checkboxes).every(cb => cb.checked); }
+    async function executeDoD() { if (!pendingDoDTaskId) return; await changeTaskStatus(pendingDoDTaskId, 'Archived'); closeDoDModal(); }
+
+    async function loadTasks() {
+        const res = await fetch(`${API}/all`); const tasks = await res.json(); globalTasksData = tasks;
+
+        document.getElementById('backlog-list').innerHTML = ''; document.getElementById('todo-list').innerHTML = ''; document.getElementById('inprogress-list').innerHTML = ''; document.getElementById('done-list').innerHTML = '';
+        let archiveHtml = ''; let dependencyOptionsHtml = '<option value="">None (Independent)</option>';
+        let counts = { Backlog: 0, 'To Do': 0, 'In Progress': 0, Done: 0 };
+        let activePoints = 0, donePoints = 0, totalScope = 0; let highCount = 0, medCount = 0, lowCount = 0;
+        const taskMap = {}; tasks.forEach(t => taskMap[t._id] = t);
+
+        tasks.forEach(task => {
+            let status = task.status;
+
+            if (status !== 'Archived' && status !== 'Aborted' && status !== 'Done') { dependencyOptionsHtml += `<option value="${task._id}">${task.title}</option>`; }
+
+            const pts = task.storyPoints || 0; totalScope += pts;
+            if (status === 'Archived') { donePoints += pts; }
+
+            if(status === 'Archived' || status === 'Aborted') {
+                const icon = status === 'Archived' ? '<span style="font-size: 16px;">✅</span>' : '<span style="font-size: 16px;">❌</span>';
+                const statusColor = status === 'Archived' ? 'var(--primary)' : 'var(--high-pri)';
+                archiveHtml += `<div class="archive-item"><div style="display: flex; gap: 12px; align-items: center;">${icon}<div><div style="font-size: 14px; font-weight: 700; color: #fff;">${task.title}</div><div style="font-size: 11px; color: var(--text-muted); text-transform: uppercase; margin-top: 4px; font-weight: 600;"><span style="color: ${statusColor};">${status}</span> • ${task.storyPoints || 0} Pts</div></div></div><button class="btn-action" style="width: auto; padding: 6px 12px; border-color: var(--secondary); color: var(--text-main);" onclick="changeTaskStatus('${task._id}', 'Backlog')">↺ Restore</button></div>`;
+                return;
+            }
+
+            if(counts[status] !== undefined) counts[status]++;
+            if (task.priority === 'High') highCount++; else if (task.priority === 'Medium') medCount++; else lowCount++;
+
+            let prioColor = task.priority === 'High' ? 'var(--high-pri)' : (task.priority === 'Medium' ? 'var(--med-pri)' : 'var(--low-pri)');
+            let prioBorder = `border-color: ${prioColor}; color: ${prioColor};`;
+            const typeBadge = task.type === 'Change Request' ? `<span class="badge" style="border: 1px solid var(--secondary); color: var(--secondary);">Req</span>` : '';
+
+            let isBlocked = false; let blockerHtml = '';
+            if (task.blockedBy && taskMap[task.blockedBy]) {
+                const blocker = taskMap[task.blockedBy];
+                if (blocker.status !== 'Archived' && blocker.status !== 'Done') {
+                    isBlocked = true; blockerHtml = `<div style="font-size: 10px; font-weight: 700; color: var(--med-pri); text-transform: uppercase; margin-top: 6px; background: rgba(245, 158, 11, 0.1); padding: 4px 8px; border-radius: 4px; border: 1px solid rgba(245, 158, 11, 0.2); display: inline-block;">🔒 BLOCKED</div>`;
+                }
+            }
+
+            let actionHtml = '';
+            if(status === 'Done') {
+                if (task.type === 'Change Request') { actionHtml = `<button class="btn-action" style="border-color: var(--primary); color: var(--primary);" onclick="event.stopPropagation(); openDoDModal('${task._id}')">✅ Authorize Final</button>`; }
+                else { actionHtml = `<button class="btn-action" style="opacity:0.5; cursor:not-allowed;" onclick="event.stopPropagation();">PM Reviewing...</button>`; }
+            }
+
+            const card = document.createElement('div'); card.className = 'task-card'; card.style.borderTop = `3px solid ${prioColor}`;
+            card.onclick = () => { window.location.href = `/task-details.html?id=${task._id}`; };
+            card.innerHTML = `<div class="task-title">${task.title}</div><div class="badges"><span class="badge" style="${prioBorder}">${task.priority}</span><span class="badge badge-pts">${pts} Pts</span>${typeBadge}</div>${blockerHtml}<div class="task-actions" style="${actionHtml ? 'display:flex;' : 'display:none;'}">${actionHtml}</div>`;
+            const targetList = document.getElementById(status.toLowerCase().replace(' ', '') + '-list'); if(targetList) targetList.appendChild(card);
+
+            if (status === 'To Do' || status === 'In Progress') { activePoints += pts; }
+        });
+
+        document.getElementById('blocked-by').innerHTML = dependencyOptionsHtml;
+        document.getElementById('archive-list-container').innerHTML = archiveHtml || '<div style="text-align:center; padding: 20px; color: var(--text-muted); font-size: 13px;">No archived or aborted operations found.</div>';
+
+        document.getElementById('count-backlog').innerText = counts.Backlog; document.getElementById('count-todo').innerText = counts['To Do']; document.getElementById('count-inprogress').innerText = counts['In Progress']; document.getElementById('count-done').innerText = counts.Done;
+
+        const ratio = totalScope === 0 ? 0 : Math.round((donePoints / totalScope) * 100);
+        document.getElementById('velocity-val').innerText = `${ratio}%`; document.getElementById('points-ratio').innerText = `${donePoints} / ${totalScope} Points Verified`;
+
+        currentActiveSprintPoints = activePoints;
+        document.getElementById('scope-subtext').innerText = `Current Load: ${activePoints} Pts`;
+        const scopeVal = document.getElementById('scope-val');
+        if (activePoints > 40) { scopeVal.innerText = "Overloaded"; scopeVal.style.color = "var(--high-pri)"; } else { scopeVal.innerText = "Stable"; scopeVal.style.color = "var(--primary)"; }
+
+        updateCharts(totalScope, donePoints, highCount, medCount, lowCount);
+        runAIPrediction(donePoints);
+    }
+
+    window.onload = () => {
+        document.getElementById('profile-name').innerText = currentUserName;
+        initCharts(); loadTasks();
+        setInterval(loadTasks, 5000);
+    };
+</script>
+</body>
+</html>

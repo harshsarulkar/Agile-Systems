@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agile Sprint Dashboard - Command Center</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --primary: #8b5cf6; --primary-hover: #7c3aed; --accent: #0ea5e9; --secondary: #d946ef;
+            --bg-color: #050505; --bg-gradient: radial-gradient(circle at top right, #1a0b2e 0%, #050505 60%, #000000 100%);
+            --surface: rgba(15, 17, 26, 0.7); --border: rgba(255, 255, 255, 0.1); --border-light: rgba(255, 255, 255, 0.2);
+            --glass-blur: blur(20px); --text-main: #f8fafc; --text-muted: #94a3b8;
+            --high-pri: #f43f5e; --med-pri: #f59e0b; --low-pri: #38bdf8; --status-done: #10b981;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { background-color: var(--bg-color); background-image: linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px), var(--bg-gradient); background-size: 30px 30px, 30px 30px, 100% 100%; background-attachment: fixed; color: var(--text-main); font-family: 'Inter', sans-serif; min-height: 100vh; display: flex; flex-direction: column; overflow-x: hidden; animation: gridMove 20s linear infinite; }
+        @keyframes gridMove { 0% { background-position: 0 0, 0 0, 0 0; } 100% { background-position: 30px 30px, 30px 30px, 0 0; } }
+        ::-webkit-scrollbar { width: 6px; height: 6px; } ::-webkit-scrollbar-track { background: transparent; } ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.15); border-radius: 10px; }
+
+        header { background: rgba(5, 5, 5, 0.8); backdrop-filter: var(--glass-blur); border-bottom: 1px solid var(--border); padding: 16px 32px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 50; box-shadow: 0 4px 30px rgba(0,0,0,0.8); }
+        .header-title { font-weight: 800; font-size: 22px; letter-spacing: 1.5px; background: linear-gradient(to right, var(--primary), var(--secondary)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; text-transform: uppercase; }
+        .header-controls { display: flex; align-items: center; gap: 16px; }
+        .nav-icon-btn { background: rgba(255, 255, 255, 0.05); border: 1px solid var(--border); color: var(--text-main); border-radius: 12px; height: 40px; padding: 0 16px; display: flex; align-items: center; gap: 8px; justify-content: center; cursor: pointer; transition: all 0.3s; font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;}
+        .nav-icon-btn:hover { color: #ffffff; border-color: var(--primary); background: rgba(139, 92, 246, 0.2); transform: translateY(-2px); box-shadow: 0 5px 15px rgba(139, 92, 246, 0.4); }
+
+        .user-info { font-size: 14px; display: flex; gap: 20px; align-items: center; border-left: 1px solid var(--border); padding-left: 24px;} .user-details { text-align: right; } .user-name { font-weight: 700; color: #ffffff; letter-spacing: 0.5px; } .user-status { font-size: 12px; color: var(--status-done); display: flex; align-items: center; gap: 6px; justify-content: flex-end; margin-top: 4px; font-weight: 600;} .status-dot-small { width: 8px; height: 8px; background: var(--status-done); border-radius: 50%; box-shadow: 0 0 10px var(--status-done); }
+        .logout-btn { background: transparent; border: 1px solid var(--high-pri); color: var(--high-pri); padding: 8px 16px; border-radius: 8px; cursor: pointer; font-size: 12px; font-weight: 600; transition: all 0.3s; } .logout-btn:hover { background: rgba(244, 63, 94, 0.15); box-shadow: 0 0 15px rgba(244, 63, 94, 0.2); }
+
+        .main-container { padding: 32px; max-width: 1800px; margin: 0 auto; width: 100%; flex-grow: 1; display: flex; flex-direction: column; gap: 32px; }
+
+        .top-widgets { display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px; }
+        .widget-card { background: linear-gradient(145deg, rgba(30, 27, 75, 0.6) 0%, rgba(10, 10, 15, 0.8) 100%); backdrop-filter: var(--glass-blur); border: 1px solid var(--border); border-top: 2px solid var(--primary); border-radius: 16px; padding: 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); transition: transform 0.3s, border-color 0.3s; position: relative; overflow: hidden; display: flex; flex-direction: column; justify-content: center;}
+        .widget-title { font-size: 13px; font-weight: 700; color: #c4b5fd; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px; position: relative;}
+        .widget-value { font-size: 36px; font-weight: 800; color: #ffffff; letter-spacing: -1px; text-shadow: 0 2px 10px rgba(0,0,0,0.5); position: relative; font-family: 'JetBrains Mono', monospace;}
+        .timer-val { color: var(--high-pri); font-family: 'JetBrains Mono', monospace; font-size: 28px; font-weight: 800; letter-spacing: 1px; text-shadow: 0 0 15px rgba(244, 63, 94, 0.5);}
+        .timer-sub { font-size: 13px; color: var(--text-muted); margin-top: 8px; font-weight: 600; letter-spacing: 0.5px;}
+
+        /* 3-COLUMN ANALYTICS MATRIX */
+        .analytics-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 24px; }
+        .chart-panel { background: rgba(15, 17, 26, 0.6); backdrop-filter: var(--glass-blur); border: 1px solid var(--border); border-radius: 16px; padding: 24px; box-shadow: 0 8px 25px rgba(0,0,0,0.4); display: flex; flex-direction: column; }
+        .chart-wrapper { position: relative; height: 220px; width: 100%; margin-top: 16px; display: flex; justify-content: center; align-items: center; }
+
+        .toolbar-panel { background: rgba(10, 10, 15, 0.8); backdrop-filter: var(--glass-blur); border: 1px solid var(--border); border-left: 4px solid var(--primary); border-radius: 16px; padding: 24px; display: flex; flex-direction: column; gap: 16px; box-shadow: 0 8px 25px rgba(0,0,0,0.4); }
+        .form-row { display: flex; gap: 16px; flex-wrap: wrap; }
+        .form-group { display: flex; flex-direction: column; gap: 8px; flex: 1; min-width: 150px; position: relative; }
+        .form-group label { font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase;}
+        input, select, textarea { background: rgba(0,0,0,0.5); border: 1px solid var(--border); color: #ffffff; padding: 12px 16px; border-radius: 10px; outline: none; font-size: 14px; transition: all 0.3s; }
+        input:focus, select:focus { border-color: var(--secondary); background: rgba(20, 20, 30, 0.8); }
+        .btn { padding: 12px 20px; border-radius: 10px; font-weight: 700; font-size: 14px; cursor: pointer; border: none; transition: all 0.3s; display: inline-flex; align-items: center; justify-content: center; gap: 8px; letter-spacing: 0.5px;}
+        .btn-primary { background: linear-gradient(135deg, var(--primary), var(--secondary)); color: white; box-shadow: 0 4px 15px rgba(139, 92, 246, 0.4); }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(139, 92, 246, 0.6); }
+        .btn-outline { background: rgba(255,255,255,0.05); border: 1px solid var(--border-light); color: var(--text-main); } .btn-outline:hover { background: rgba(255,255,255,0.1); transform: translateY(-2px);}
+
+        .kanban { display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px; align-items: start; padding-bottom: 20px; }
+        .column { background: rgba(10, 10, 15, 0.6); border-radius: 20px; padding: 20px; min-height: 500px; border: 1px solid var(--border); display: flex; flex-direction: column; gap: 16px; box-shadow: inset 0 0 20px rgba(0,0,0,0.5); }
+        .column-header { font-weight: 800; font-size: 13px; color: #fff; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; padding-bottom: 12px; border-bottom: 1px solid var(--border); }
+        .col-count { background: rgba(255,255,255,0.05); color: #ffffff; padding: 4px 12px; border-radius: 12px; font-size: 12px; font-weight: 800; border: 1px solid var(--border);}
+
+        .task-card { background: linear-gradient(145deg, rgba(20, 24, 39, 0.9) 0%, rgba(10, 10, 15, 0.95) 100%); backdrop-filter: blur(10px); padding: 20px; border-radius: 14px; border: 1px solid var(--border-light); transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); display: flex; flex-direction: column; gap: 14px; cursor: pointer; position: relative; box-shadow: 0 4px 15px rgba(0,0,0,0.4); }
+        .task-card:hover { transform: translateY(-4px) scale(1.02); box-shadow: 0 15px 30px rgba(0,0,0,0.6); border-color: var(--secondary); }
+        .task-title { font-weight: 600; font-size: 15px; color: #ffffff; line-height: 1.4; letter-spacing: 0.3px;}
+        .badges { display: flex; gap: 8px; flex-wrap: wrap; } .badge { font-size: 10px; padding: 6px 12px; border-radius: 20px; font-weight: 800; letter-spacing: 0.5px; text-transform: uppercase; box-shadow: 0 2px 5px rgba(0,0,0,0.3);} .badge-pts { background: rgba(255,255,255,0.05); color: var(--text-main); border: 1px solid var(--border);}
+        .assignee-row { display: flex; align-items: center; gap: -8px; } .assignee-avatar { width: 28px; height: 28px; border-radius: 50%; background: linear-gradient(135deg, var(--primary), var(--accent)); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 800; border: 2px solid var(--bg-color); margin-left: -8px; box-shadow: 0 2px 5px rgba(0,0,0,0.5); text-transform: uppercase; } .assignee-avatar:first-child { margin-left: 0; }
+        .task-actions { display: flex; gap: 8px; margin-top: 4px; } .btn-action { flex: 1; padding: 10px; font-size: 11px; font-weight: 800; border-radius: 8px; cursor: pointer; border: 1px solid var(--border); background: rgba(0,0,0,0.4); color: var(--text-main); transition: all 0.2s; display: flex; justify-content: center; align-items: center; text-transform: uppercase; letter-spacing: 0.5px;} .btn-action:hover { background: var(--primary); border-color: var(--primary); color: #ffffff; box-shadow: 0 0 15px rgba(139, 92, 246, 0.4); }
+
+        .audit-overlay { position: fixed; top:0; left:0; right:0; bottom:0; background: rgba(0,0,0,0.6); backdrop-filter: blur(5px); z-index: 999; opacity: 0; pointer-events: none; transition: opacity 0.3s; } .audit-overlay.active { opacity: 1; pointer-events: all; }
+        .audit-drawer { position: fixed; top: 0; right: 0; width: 400px; max-width: 100%; height: 100vh; background: rgba(10, 10, 15, 0.95); backdrop-filter: blur(20px); border-left: 1px solid var(--border-light); box-shadow: -10px 0 40px rgba(0,0,0,0.8); transform: translateX(100%); transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1); z-index: 1000; display: flex; flex-direction: column; } .audit-drawer.open { transform: translateX(0); }
+        .audit-header { padding: 24px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.5); } .audit-title { font-size: 16px; font-weight: 800; color: #fff; text-transform: uppercase; letter-spacing: 1px; display: flex; align-items: center; gap: 10px; } .audit-title::before { content:''; width:10px; height:10px; background:var(--accent); border-radius:50%; box-shadow: 0 0 10px var(--accent); }
+        .close-audit-btn { background: transparent; border: none; color: var(--text-muted); cursor: pointer; transition: color 0.2s; } .close-audit-btn:hover { color: #fff; }
+        .audit-feed { flex-grow: 1; overflow-y: auto; padding: 24px; display: flex; flex-direction: column; gap: 20px; font-family: 'JetBrains Mono', monospace; font-size: 13px; } .audit-item { display: flex; flex-direction: column; gap: 6px; padding-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.05); } .audit-time { color: var(--accent); font-weight: 700; font-size: 11px; } .audit-text { color: var(--text-muted); line-height: 1.5; } .audit-highlight { color: #fff; font-weight: 700; background: rgba(255,255,255,0.1); padding: 2px 6px; border-radius: 4px; }
+
+        .modal-overlay { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0, 0, 0, 0.8); backdrop-filter: blur(10px); z-index:1100; align-items:center; justify-content:center; opacity: 0; transition: opacity 0.3s; } .modal-overlay.active { display: flex; opacity: 1; }
+        .modal-box { background: rgba(15, 17, 26, 0.95); padding: 40px; border-radius: 20px; width: 100%; max-width: 600px; border: 1px solid var(--primary); box-shadow: 0 0 50px rgba(139, 92, 246, 0.3); transform: scale(0.95); transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); } .modal-overlay.active .modal-box { transform: scale(1); }
+        .checkbox-container { margin: 20px 0 32px 0; max-height: 250px; overflow-y: auto; display:flex; flex-direction:column; gap:16px; background: rgba(0,0,0,0.4); padding: 20px; border-radius: 12px; border: 1px solid var(--border);} .checkbox-label { display:flex; align-items:center; gap:12px; font-size:14px; cursor:pointer; color: var(--text-main); font-weight: 600; background: rgba(0,0,0,0.4); padding: 12px; border-radius: 8px; border: 1px solid var(--border); transition: all 0.2s;} .checkbox-label:hover { border-color: var(--primary); } .checkbox-label input { width: 18px; height: 18px; accent-color: var(--primary); cursor: pointer;}
+        .archive-list { display: flex; flex-direction: column; gap: 12px; max-height: 350px; overflow-y: auto; padding-right: 10px;} .archive-item { display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.05); border: 1px solid var(--border); padding: 16px; border-radius: 12px; transition: background 0.2s;} .archive-item:hover { background: rgba(255,255,255,0.1); }
+    </style>
+</head>
+<body>
+
+<header>
+    <div class="header-title">SPRINT COMMAND</div>
+    <div class="header-controls">
+        <button class="nav-icon-btn" onclick="window.location.href='/chat.html'">Comm-Link</button>
+        <button class="nav-icon-btn" onclick="toggleAuditDrawer()">Audit Log</button>
+        <div class="user-info">
+            <div class="user-details"><div id="profile-name" class="user-name">Loading...</div><div class="user-status"><div class="status-dot-small"></div>Secure Link</div></div>
+            <button class="logout-btn" onclick="logout()">Terminate</button>
+        </div>
+    </div>
+</header>
+
+<div class="main-container">
+    <div class="top-widgets">
+        <div class="widget-card">
+            <div class="widget-title">Active Points</div><div id="active-pts-val" class="widget-value" style="color: var(--accent);">0</div><div class="timer-sub">Total points in Development</div>
+        </div>
+        <div class="widget-card">
+            <div class="widget-title">Completion Rate</div><div id="completion-val" class="widget-value" style="color: var(--status-done);">0%</div><div class="timer-sub">Verified vs. Total Scope</div>
+        </div>
+        <div class="widget-card">
+            <div class="widget-title">Operative Load</div><div id="workload-val" class="widget-value" style="color: var(--secondary);">0</div><div class="timer-sub">Active operatives deployed</div>
+        </div>
+        <div class="widget-card">
+            <div class="widget-title" id="timer-label">Next Critical Deadline</div><div id="timer" class="timer-val">--:--:--</div><div id="upcoming-timer" class="timer-sub" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Awaiting targets...</div>
+        </div>
+    </div>
+
+    <div class="analytics-row">
+        <div class="chart-panel">
+            <div class="widget-title" style="color: #fff;">Sprint Velocity</div><div style="color: var(--text-muted); font-size: 12px;">Capacity vs. Completed Work</div>
+            <div class="chart-wrapper"><canvas id="velocityChart"></canvas></div>
+        </div>
+        <div class="chart-panel">
+            <div class="widget-title" style="color: #fff;">Burndown Trajectory</div><div style="color: var(--text-muted); font-size: 12px;">Remaining Effort vs. Ideal Burn</div>
+            <div class="chart-wrapper"><canvas id="burndownChart"></canvas></div>
+        </div>
+        <div class="chart-panel">
+            <div class="widget-title" style="color: #fff;">Task Distribution</div><div style="color: var(--text-muted); font-size: 12px;">Active Operations by Priority</div>
+            <div class="chart-wrapper"><canvas id="distributionChart"></canvas></div>
+        </div>
+    </div>
+
+    <div class="toolbar-panel">
+        <div style="font-weight: 800; color: #fff; font-size: 16px; text-transform: uppercase; letter-spacing: 1px;">Deploy New Operation</div>
+        <div class="form-row">
+            <div class="form-group" style="flex: 2;"><label>Objective Title</label><input type="text" id="title" placeholder="Identify target objective..."></div>
+            <div class="form-group" style="flex: none; width: 80px;"><label>Pts</label><input type="number" id="points" placeholder="0"></div>
+            <div class="form-group" style="flex: 1.5;"><label>Deadline</label><input type="datetime-local" id="deadline"></div>
+            <div class="form-group" style="flex: 1;"><label>Priority</label><select id="priority"><option value="Low">Standard</option><option value="Medium">Elevated</option><option value="High">Critical</option></select></div>
+        </div>
+        <div class="form-row" style="align-items: flex-end;">
+            <div class="form-group" style="flex: 2;"><label>Operation Parameters</label><input type="text" id="desc" placeholder="Details..."></div>
+            <div class="form-group" style="flex: 1.5;"><label>Blocked By</label><select id="blocked-by"><option value="">None</option></select></div>
+            <div class="form-group" style="flex: 1;"><label>Target Phase</label><select id="task-status"><option value="Backlog">Client Backlog</option><option value="To Do" selected>Staging</option></select></div>
+            <button class="btn btn-primary" onclick="openAssignModal()" style="height: 46px;">Initialize</button>
+        </div>
+    </div>
+
+    <div class="kanban">
+        <div class="column"><div class="column-header">Client Backlog <span class="col-count" id="count-backlog">0</span></div><div id="backlog-list"></div></div>
+        <div class="column"><div class="column-header">Staging <span class="col-count" id="count-todo">0</span></div><div id="todo-list"></div></div>
+        <div class="column"><div class="column-header">Active Ops <span class="col-count" id="count-inprogress">0</span></div><div id="inprogress-list"></div></div>
+        <div class="column"><div class="column-header">Awaiting Sign-Off <span class="col-count" id="count-done">0</span></div><div id="done-list"></div><button class="btn btn-outline" style="margin-top: 16px; width: 100%; border-style: dashed;" onclick="openArchiveModal()">View Archives</button></div>
+    </div>
+</div>
+
+<div id="audit-overlay" class="audit-overlay" onclick="toggleAuditDrawer()"></div>
+<div id="audit-drawer" class="audit-drawer"><div class="audit-header"><div class="audit-title">System Audit Log</div><button class="close-audit-btn" onclick="toggleAuditDrawer()"><svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button></div><div id="audit-feed" class="audit-feed"><div style="color: var(--text-muted); text-align: center; margin-top: 20px;">Establishing audit connection...</div></div></div>
+
+<div id="assign-modal" class="modal-overlay"><div class="modal-box"><div style="font-size: 24px; font-weight: 800; color: #fff; margin-bottom: 8px;">Designate Operatives</div><div id="roster-checkboxes" class="checkbox-container"></div><div style="display: flex; gap: 16px;"><button class="btn btn-outline" style="flex: 1;" onclick="closeModal('assign-modal')">Cancel</button><button class="btn btn-primary" style="flex: 2;" onclick="submitTask()">Confirm Deployment</button></div></div></div>
+
+<div id="dod-modal" class="modal-overlay"><div class="modal-box"><div style="font-size: 24px; font-weight: 800; color: #fff; margin-bottom: 8px;">PM Technical Sign-Off</div><div style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 32px; margin-top: 24px;"><label class="checkbox-label"><input type="checkbox" class="dod-check" onchange="validateDoD()"> Code Review & QA Passed</label><label class="checkbox-label"><input type="checkbox" class="dod-check" onchange="validateDoD()"> Staging Deployment Stable</label></div><div style="display: flex; gap: 16px;"><button class="btn btn-outline" style="flex: 1;" onclick="closeDoDModal()">Cancel</button><button id="btn-confirm-dod" class="btn btn-primary" style="flex: 2;" disabled onclick="executeDoD()">Authorize Archival</button></div></div></div>
+
+<div id="archive-modal" class="modal-overlay"><div class="modal-box"><div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;"><div><div style="font-size: 24px; font-weight: 800; color: #fff;">Operation Archives</div></div><button class="close-audit-btn" onclick="closeModal('archive-modal')"><svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button></div><div id="archive-list-container" class="archive-list"></div></div></div>
+
+<script>
+    const API = 'http://127.0.0.1:5000/api/tasks';
+    const currentUserEmail = sessionStorage.getItem('commanderIdentity') || 'Unknown';
+    const currentUserName = sessionStorage.getItem('commanderName') || currentUserEmail.split('@')[0];
+    const currentRole = sessionStorage.getItem('commanderRole') || 'Operative';
+
+    if (currentRole === 'Client') { window.location.href = '/client-dashboard.html'; }
+
+    let burndownChartObj; let velocityChartObj; let distributionChart;
+    let sprintActivePoints = 0; let sprintDonePoints = 0; let activeTimerInterval;
+    let teamRosterData = []; let lastTasksHash = ""; let globalTasksData = [];
+    let systemAuditLogs = []; let pendingDoDTaskId = null; let pendingDoDTaskTitle = null;
+
+    function escapeQuotes(str) { return str.replace(/'/g, "\\'").replace(/"/g, '&quot;'); }
+    function logout() { sessionStorage.clear(); window.location.href = '/'; }
+    function closeModal(id) { document.getElementById(id).classList.remove('active'); }
+    function openModal(id) { document.getElementById(id).classList.add('active'); }
+    function openArchiveModal() { openModal('archive-modal'); }
+
+    function toggleAuditDrawer() { document.getElementById('audit-drawer').classList.toggle('open'); document.getElementById('audit-overlay').classList.toggle('active'); }
+
+    function pushAuditLog(action, taskName) {
+        const timeStr = new Date().toLocaleTimeString([], {hour12: false});
+        systemAuditLogs.unshift({ time: timeStr, text: `Action verified: ${action} <span class="audit-highlight">[${taskName}]</span>` });
+        if (systemAuditLogs.length > 30) systemAuditLogs.pop();
+        document.getElementById('audit-feed').innerHTML = systemAuditLogs.map(log => `<div class="audit-item"><span class="audit-time">[${log.time}]</span><span class="audit-text">${log.text}</span></div>`).join('');
+    }
+
+    function openDoDModal(id, title) { pendingDoDTaskId = id; pendingDoDTaskTitle = title; document.querySelectorAll('.dod-check').forEach(cb => cb.checked = false); validateDoD(); openModal('dod-modal'); }
+    function closeDoDModal() { closeModal('dod-modal'); pendingDoDTaskId = null; pendingDoDTaskTitle = null; }
+    function validateDoD() { const checkboxes = document.querySelectorAll('.dod-check'); document.getElementById('btn-confirm-dod').disabled = !Array.from(checkboxes).every(cb => cb.checked); }
+    async function executeDoD() { if (!pendingDoDTaskId) return; await changeTaskStatus(pendingDoDTaskId, 'Archived', pendingDoDTaskTitle); closeDoDModal(); }
+
+    function initCharts() {
+        Chart.defaults.font.family = 'Inter'; Chart.defaults.color = '#94a3b8';
+        velocityChartObj = new Chart(document.getElementById('velocityChart').getContext('2d'), {
+            type: 'bar', data: { labels: ['Sp 1', 'Sp 2', 'Sp 3', 'Current'], datasets: [ { label: 'Capacity', data: [40, 45, 40, 40], backgroundColor: 'rgba(56, 189, 248, 0.2)', borderColor: '#38bdf8', borderWidth: 2, borderRadius: 4 }, { label: 'Completed', data: [38, 45, 35, 0], backgroundColor: 'rgba(16, 185, 129, 0.5)', borderColor: '#10b981', borderWidth: 2, borderRadius: 4 } ] },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'top', labels: { color: '#f8fafc', usePointStyle: true, boxWidth: 8 } } }, scales: { y: { suggestedMax: 50, beginAtZero: true, grid: { color: 'rgba(255,255,255,0.05)' } }, x: { grid: { display: false } } } }
+        });
+        burndownChartObj = new Chart(document.getElementById('burndownChart').getContext('2d'), {
+            type: 'line', data: { labels: ['Start', 'Day 3', 'Day 6', 'Day 9', 'End'], datasets: [ { label: 'Remaining', data: [0,0,0,0,0], borderColor: '#d946ef', backgroundColor: 'rgba(217, 70, 239, 0.1)', fill: true, tension: 0.4, borderWidth: 3, pointBackgroundColor: '#d946ef', pointRadius: 4 }, { label: 'Ideal', data: [0,0,0,0,0], borderColor: '#0ea5e9', borderDash: [5, 5], tension: 0, borderWidth: 2, pointRadius: 0 } ] },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'top', labels: { color: '#f8fafc', usePointStyle: true, boxWidth: 8 } } }, scales: { y: { suggestedMax: 50, beginAtZero: true, grid: { color: 'rgba(255,255,255,0.05)' } }, x: { grid: { color: 'rgba(255,255,255,0.05)' } } } }
+        });
+        distributionChart = new Chart(document.getElementById('distributionChart').getContext('2d'), {
+            type: 'doughnut', data: { labels: ['Empty'], datasets: [{ data: [1], backgroundColor: ['rgba(255,255,255,0.05)'], borderWidth: 0 }] },
+            options: { responsive: true, maintainAspectRatio: false, cutout: '75%', plugins: { legend: { position: 'right', labels: { color: '#f8fafc', padding: 15, usePointStyle: true } } } }
+        });
+    }
+
+    function updateCharts(highC, medC, lowC) {
+        let total = sprintActivePoints + sprintDonePoints; if (total === 0) total = 10;
+        burndownChartObj.data.datasets[0].data = [total, total * 0.85, sprintActivePoints, null, null];
+        burndownChartObj.data.datasets[1].data = [total, total * 0.75, total * 0.5, total * 0.25, 0]; burndownChartObj.update();
+        velocityChartObj.data.datasets[1].data[3] = sprintDonePoints; velocityChartObj.update();
+
+        if ((highC + medC + lowC) === 0) {
+            distributionChart.data.datasets[0].data = [1]; distributionChart.data.datasets[0].backgroundColor = ['rgba(255,255,255,0.05)']; distributionChart.data.labels = ['No Active Tasks'];
+        } else {
+            distributionChart.data.datasets[0].data = [highC, medC, lowC]; distributionChart.data.datasets[0].backgroundColor = ['#f43f5e', '#f59e0b', '#38bdf8']; distributionChart.data.labels = ['High', 'Medium', 'Low'];
+        }
+        distributionChart.update();
+    }
+
+    async function loadTeam() {
+        try {
+            const res = await fetch('http://127.0.0.1:5000/api/team/all'); const team = await res.json(); const now = new Date().getTime();
+            teamRosterData = team.filter(m => m.role !== 'Client').map(m => { return { name: m.email.split('@')[0], role: m.role || 'Operative', online: (now - new Date(m.lastSeen).getTime()) < 60000 }; });
+        } catch(e) {}
+    }
+
+    async function openAssignModal() {
+        const title = document.getElementById('title').value; const storyPoints = document.getElementById('points').value;
+        if(!title || !storyPoints) return alert("Parameters missing.");
+        await loadTeam(); const container = document.getElementById('roster-checkboxes'); container.innerHTML = '';
+        teamRosterData.forEach(member => { container.innerHTML += `<label class="checkbox-label"><input type="checkbox" value="${member.name}" class="operative-check">${member.name}</label>`; });
+        openModal('assign-modal');
+    }
+
+    async function submitTask() {
+        const checkboxes = document.querySelectorAll('.operative-check:checked'); const assignees = Array.from(checkboxes).map(cb => cb.value);
+        const payload = { title: document.getElementById('title').value, description: document.getElementById('desc').value, storyPoints: Number(document.getElementById('points').value) || 0, priority: document.getElementById('priority').value, deadline: document.getElementById('deadline').value, status: document.getElementById('task-status').value, type: "Standard", createdBy: currentUserName, assignees: assignees, blockedBy: document.getElementById('blocked-by').value || null };
+        await fetch(`${API}/add`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload) });
+        pushAuditLog("INITIALIZED", payload.title); document.getElementById('title').value = ''; document.getElementById('points').value = ''; document.getElementById('deadline').value = ''; document.getElementById('desc').value = ''; document.getElementById('blocked-by').value = '';
+        closeModal('assign-modal'); loadTasks();
+    }
+
+    async function changeTaskStatus(id, newStatus, title) {
+        await fetch(`${API}/update/${id}`, { method: 'PATCH', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ status: newStatus }) });
+        pushAuditLog(`STATUS SHIFT -> ${newStatus.toUpperCase()}`, title || id); loadTasks();
+    }
+
+    async function loadTasks() {
+        const res = await fetch(`${API}/all`); const tasks = await res.json();
+        const currentHash = JSON.stringify(tasks); if (currentHash === lastTasksHash) return; lastTasksHash = currentHash; globalTasksData = tasks;
+
+        document.getElementById('backlog-list').innerHTML = ''; document.getElementById('todo-list').innerHTML = ''; document.getElementById('inprogress-list').innerHTML = ''; document.getElementById('done-list').innerHTML = '';
+        let archiveHtml = ''; let dependencyOptionsHtml = '<option value="">None (Independent)</option>';
+        let counts = { Backlog: 0, 'To Do': 0, 'In Progress': 0, Done: 0 }; sprintActivePoints = 0; sprintDonePoints = 0; let activeTasksForTimer = [];
+        let uniqueActiveOperatives = new Set(); let highCount = 0, medCount = 0, lowCount = 0;
+        const taskMap = {}; tasks.forEach(t => taskMap[t._id] = t);
+
+        tasks.forEach(task => {
+            let status = task.status;
+            if (status !== 'Archived' && status !== 'Aborted' && status !== 'Done') { dependencyOptionsHtml += `<option value="${task._id}">${task.title}</option>`; }
+            if(status === 'Archived' || status === 'Aborted') {
+                const icon = status === 'Archived' ? '<span style="font-size: 16px;">✅</span>' : '<span style="font-size: 16px;">❌</span>';
+                const statusColor = status === 'Archived' ? 'var(--status-done)' : 'var(--high-pri)';
+                archiveHtml += `<div class="archive-item"><div style="display: flex; gap: 12px; align-items: center;">${icon}<div><div style="font-size: 14px; font-weight: 700; color: #fff;">${task.title}</div><div style="font-size: 11px; color: var(--text-muted); text-transform: uppercase; margin-top: 4px; font-weight: 600;"><span style="color: ${statusColor};">${status}</span> • ${task.storyPoints || 0} Pts</div></div></div><button class="btn-action" style="width: auto; padding: 8px 16px; border-color: var(--accent); color: var(--accent);" onclick="changeTaskStatus('${task._id}', 'To Do', '${escapeQuotes(task.title)}')">↺ Re-Stage</button></div>`;
+                return;
+            }
+
+            if(counts[status] !== undefined) counts[status]++;
+            if (task.priority === 'High') highCount++; else if (task.priority === 'Medium') medCount++; else lowCount++;
+
+            let prioColor = task.priority === 'High' ? 'var(--high-pri)' : (task.priority === 'Medium' ? 'var(--med-pri)' : 'var(--low-pri)');
+            let prioBg = task.priority === 'High' ? 'rgba(244, 63, 94, 0.15)' : (task.priority === 'Medium' ? 'rgba(245, 158, 11, 0.15)' : 'rgba(56, 189, 248, 0.15)');
+            const typeBadge = task.type === 'Change Request' ? `<span class="badge" style="background:rgba(217, 70, 239, 0.2); color:var(--secondary); border: 1px solid var(--secondary);">External Request</span>` : '';
+
+            let assigneesHtml = '';
+            if (task.assignees && task.assignees.length > 0) {
+                let avatars = task.assignees.map(a => `<div class="assignee-avatar" title="${a}">${a.substring(0,2)}</div>`).join('');
+                assigneesHtml = `<div class="assignee-row">${avatars}</div>`;
+                if (status === 'To Do' || status === 'In Progress') { task.assignees.forEach(a => uniqueActiveOperatives.add(a)); }
+            }
+
+            let deadlineHtml = '';
+            if (task.deadline && task.deadline !== "") {
+                const d = new Date(task.deadline);
+                if (!isNaN(d.getTime())) { deadlineHtml = `<div style="color: var(--high-pri); display: flex; align-items: center; gap: 6px; font-weight: 700; font-size: 11px; text-transform: uppercase;">⌚ ${d.toLocaleDateString()} ${d.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>`; }
+            }
+
+            let isBlocked = false; let blockerHtml = '';
+            if (task.blockedBy && taskMap[task.blockedBy]) {
+                const blocker = taskMap[task.blockedBy];
+                if (blocker.status !== 'Archived' && blocker.status !== 'Done') {
+                    isBlocked = true; blockerHtml = `<div style="font-size: 10px; font-weight: 800; color: var(--med-pri); text-transform: uppercase; margin-top: 6px; letter-spacing: 0.5px; background: rgba(245, 158, 11, 0.1); padding: 4px 8px; border-radius: 4px; border: 1px solid rgba(245, 158, 11, 0.3); display: inline-block;">🔒 BLOCKED BY: ${blocker.title}</div>`;
+                }
+            }
+
+            let actionHtml = ''; let signOffRequirementTag = '';
+            if (status === 'Backlog') {
+                if (currentRole !== 'Project Manager') { actionHtml = `<button class="btn-action" style="opacity:0.5; cursor:not-allowed;" onclick="event.stopPropagation();">PM Locked</button>`; }
+                else if (isBlocked) { actionHtml = `<button class="btn-action" style="color: var(--med-pri); border-color: rgba(245, 158, 11, 0.3); cursor:not-allowed;" onclick="event.stopPropagation();">🔒 Locked</button>`; }
+                else { actionHtml = `<button class="btn-action" onclick="event.stopPropagation(); changeTaskStatus('${task._id}', 'To Do', '${escapeQuotes(task.title)}')">Advance ➔</button>`; }
+            } else if (status === 'To Do') {
+                if (isBlocked) { actionHtml = `<button class="btn-action" style="color: var(--med-pri); border-color: rgba(245, 158, 11, 0.3); cursor:not-allowed;" onclick="event.stopPropagation();">🔒 Locked</button>`; }
+                else { actionHtml = `<button class="btn-action" onclick="event.stopPropagation(); changeTaskStatus('${task._id}', 'In Progress', '${escapeQuotes(task.title)}')">Advance ➔</button>`; }
+            } else if (status === 'In Progress') {
+                actionHtml = `<button class="btn-action" onclick="event.stopPropagation(); changeTaskStatus('${task._id}', 'Done', '${escapeQuotes(task.title)}')">Send for Sign-Off</button>`;
+            } else if (status === 'Done') {
+                if (task.type === 'Change Request') {
+                    signOffRequirementTag = `<div style="font-size: 10px; font-weight: 800; color: var(--secondary); text-transform: uppercase; margin-top: 6px; letter-spacing: 0.5px;">⚠️ Awaiting Client Sign-Off</div>`;
+                    actionHtml = `<button class="btn-action" style="opacity:0.5; cursor:not-allowed;" onclick="event.stopPropagation();">Awaiting Client</button>`;
+                } else {
+                    signOffRequirementTag = `<div style="font-size: 10px; font-weight: 800; color: var(--primary); text-transform: uppercase; margin-top: 6px; letter-spacing: 0.5px;">⚠️ Awaiting PM Sign-Off</div>`;
+                    if (currentRole === 'Project Manager') {
+                        actionHtml = `<button class="btn-action" style="border-color: var(--status-done); color: var(--status-done);" onclick="event.stopPropagation(); openDoDModal('${task._id}', '${escapeQuotes(task.title)}')">✅ Approve</button><button class="btn-action" style="border-color: var(--high-pri); color: var(--high-pri);" onclick="event.stopPropagation(); changeTaskStatus('${task._id}', 'Aborted', '${escapeQuotes(task.title)}')">❌ Abort</button>`;
+                    } else { actionHtml = `<button class="btn-action" style="opacity:0.5; cursor:not-allowed;" onclick="event.stopPropagation();">Awaiting PM</button>`; }
+                }
+            }
+
+            const card = document.createElement('div'); card.className = 'task-card'; card.style.borderTop = `3px solid ${prioColor}`;
+            card.onclick = () => { window.location.href = `/task-details.html?id=${task._id}`; };
+            card.innerHTML = `<div class="task-header"><div class="task-title">${task.title}</div></div><div class="badges"><span class="badge" style="background:${prioBg}; color:${prioColor}; border: 1px solid ${prioColor};">${task.priority}</span><span class="badge badge-pts">${task.storyPoints || 0} Pts</span>${typeBadge}</div>${blockerHtml}${signOffRequirementTag}<div style="display:flex; justify-content: space-between; align-items: flex-end; margin-top: 4px;">${deadlineHtml}${assigneesHtml}</div><div class="task-actions">${actionHtml}</div>`;
+            const targetList = document.getElementById(status.toLowerCase().replace(' ', '') + '-list'); if(targetList) targetList.appendChild(card);
+
+            if (status === 'To Do' || status === 'In Progress') {
+                sprintActivePoints += (task.storyPoints || 0);
+                activeTasksForTimer.push(task);
+            }
+        });
+
+        document.getElementById('blocked-by').innerHTML = dependencyOptionsHtml;
+        document.getElementById('archive-list-container').innerHTML = archiveHtml || '<div style="text-align:center; padding: 20px; color: var(--text-muted); font-size: 13px;">No archived or aborted operations found.</div>';
+
+        document.getElementById('count-backlog').innerText = counts.Backlog; document.getElementById('count-todo').innerText = counts['To Do']; document.getElementById('count-inprogress').innerText = counts['In Progress']; document.getElementById('count-done').innerText = counts.Done;
+        document.getElementById('active-pts-val').innerText = sprintActivePoints;
+
+        let verifiedPoints = 0; tasks.forEach(t => { if(t.status === 'Archived') verifiedPoints += (t.storyPoints || 0); }); sprintDonePoints = verifiedPoints;
+        const totalScope = sprintActivePoints + sprintDonePoints; const compRate = totalScope === 0 ? 0 : Math.round((sprintDonePoints / totalScope) * 100);
+        document.getElementById('completion-val').innerText = `${compRate}%`;
+        document.getElementById('workload-val').innerText = uniqueActiveOperatives.size;
+
+        if (systemAuditLogs.length === 0) pushAuditLog("SYSTEM BOOT", "Command Center Online");
+
+        updateCharts(highCount, medCount, lowCount);
+        startDynamicTimer(activeTasksForTimer);
+    }
+
+    function startDynamicTimer(activeTasks) {
+        clearInterval(activeTimerInterval);
+        const label = document.getElementById('timer-label'); const timerDisplay = document.getElementById('timer'); const upcomingDisplay = document.getElementById('upcoming-timer');
+
+        const validTasks = activeTasks.filter(t => t.deadline && t.deadline !== "" && !isNaN(new Date(t.deadline).getTime()));
+
+        const updateTimer = () => {
+            const now = new Date().getTime();
+            const futureTasks = validTasks.filter(t => new Date(t.deadline).getTime() > now).sort((a, b) => new Date(a.deadline) - new Date(b.deadline));
+            const pastTasks = validTasks.filter(t => new Date(t.deadline).getTime() <= now).sort((a, b) => new Date(b.deadline) - new Date(a.deadline));
+
+            if (futureTasks.length === 0) {
+                if (pastTasks.length > 0) {
+                    label.innerText = `OVERDUE: ${pastTasks[0].title}`; timerDisplay.innerText = "00:00:00"; timerDisplay.style.color = "var(--high-pri)"; timerDisplay.style.textShadow = "0 0 20px rgba(244, 63, 94, 0.8)"; upcomingDisplay.innerText = "⚠️ OPERATION DEADLINE BREACHED"; upcomingDisplay.style.color = "var(--high-pri)";
+                } else {
+                    label.innerText = "Next Critical Deadline"; timerDisplay.innerText = "--:--:--"; timerDisplay.style.color = "var(--text-muted)"; timerDisplay.style.textShadow = "none"; upcomingDisplay.innerText = "Awaiting operations vector..."; upcomingDisplay.style.color = "var(--accent)";
+                }
+                return;
+            }
+
+            const currentTask = futureTasks[0]; const upcomingTask = futureTasks.length > 1 ? futureTasks[1] : null; label.innerText = `Deadline: ${currentTask.title}`;
+            const distance = new Date(currentTask.deadline).getTime() - now;
+
+            const d = Math.floor(distance / 86400000); const h = Math.floor((distance % 86400000) / 3600000); const m = Math.floor((distance % 3600000) / 60000); const s = Math.floor((distance % 60000) / 1000);
+            timerDisplay.innerText = d > 0 ? `${d}d ${h}h ${m}m` : `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+            if(distance < 7200000) { timerDisplay.style.color = "var(--high-pri)"; timerDisplay.style.textShadow = '0 0 15px rgba(244, 63, 94, 0.6)'; } else { timerDisplay.style.color = '#ffffff'; timerDisplay.style.textShadow = '0 0 15px rgba(255,255,255,0.5)'; }
+            if (upcomingTask) { upcomingDisplay.innerText = `Next: ${upcomingTask.title}`; upcomingDisplay.style.color = "var(--text-muted)"; } else { upcomingDisplay.innerText = "No secondary tasks in queue."; upcomingDisplay.style.color = "var(--text-muted)"; }
+        };
+
+        updateTimer(); activeTimerInterval = setInterval(updateTimer, 1000);
+    }
+
+    window.onload = () => {
+        document.getElementById('profile-name').innerText = currentUserName;
+        initCharts(); loadTeam(); loadTasks();
+        setInterval(loadTasks, 5000);
+    };
+</script>
+</body>
+</html>

@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Operation Details</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #6366f1; --primary-hover: #4f46e5; --accent: #0ea5e9; --bg-color: #0f111a;
+            --bg-gradient: radial-gradient(circle at top right, #1e1b4b 0%, #0f111a 50%, #09090b 100%);
+            --surface: rgba(20, 24, 39, 0.6); --border: rgba(255, 255, 255, 0.08); --border-light: rgba(255, 255, 255, 0.15);
+            --glass-blur: blur(16px); --text-main: #f8fafc; --text-muted: #94a3b8;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { background: var(--bg-color); background-image: var(--bg-gradient); background-attachment: fixed; color: var(--text-main); font-family: 'Inter', sans-serif; min-height: 100vh; display: flex; flex-direction: column; }
+        ::-webkit-scrollbar { width: 6px; } ::-webkit-scrollbar-track { background: transparent; } ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); border-radius: 10px; } ::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.2); }
+
+        header { background: rgba(15, 17, 26, 0.7); backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur); padding: 16px 32px; display: flex; align-items: center; border-bottom: 1px solid var(--border); }
+        .back-btn { color: var(--text-muted); text-decoration: none; font-weight: 500; display: flex; align-items: center; gap: 8px; transition: color 0.2s; }
+        .back-btn:hover { color: #ffffff; }
+
+        .container { padding: 40px; max-width: 1400px; margin: 0 auto; width: 100%; display: grid; grid-template-columns: 1fr 1fr; gap: 40px; flex-grow: 1; }
+
+        .panel { background: var(--surface); backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur); border: 1px solid var(--border); border-radius: 16px; padding: 32px; display: flex; flex-direction: column; gap: 24px; }
+
+        h1 { font-size: 28px; font-weight: 600; color: #ffffff; line-height: 1.3; }
+        .meta-row { display: flex; gap: 24px; color: var(--text-muted); font-size: 14px; padding-bottom: 24px; border-bottom: 1px solid var(--border); align-items: center; }
+        .meta-item { display: flex; flex-direction: column; gap: 4px; }
+        .meta-value { color: #ffffff; font-weight: 500; font-size: 16px; }
+
+        label { font-size: 13px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
+        textarea { width: 100%; background: rgba(0,0,0,0.2); border: 1px solid var(--border); color: #ffffff; padding: 16px; border-radius: 8px; outline: none; font-size: 15px; font-family: inherit; transition: all 0.3s; resize: vertical; min-height: 150px; line-height: 1.6;}
+        textarea:focus { border-color: var(--accent); background: rgba(0,0,0,0.4); }
+
+        select { background: rgba(0,0,0,0.2); border: 1px solid var(--border); color: #ffffff; padding: 8px 12px; border-radius: 6px; outline: none; font-size: 14px; font-family: inherit; transition: all 0.3s; }
+        select:focus { border-color: var(--accent); }
+        select:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        .btn { padding: 12px 24px; border-radius: 8px; font-weight: 600; font-size: 14px; cursor: pointer; border: none; transition: all 0.3s; }
+        .btn-primary { background: linear-gradient(135deg, var(--primary), var(--accent)); color: white; }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(99, 102, 241, 0.4); }
+
+        /* Chat UI */
+        .chat-container { display: flex; flex-direction: column; height: 100%; background: rgba(0,0,0,0.2); border-radius: 12px; overflow: hidden; border: 1px solid var(--border); }
+        .chat-header { background: rgba(255,255,255,0.03); padding: 16px 24px; border-bottom: 1px solid var(--border); font-size: 14px; font-weight: 600; color: #ffffff; letter-spacing: 1px; display: flex; align-items: center; gap: 10px; }
+        .chat-history { flex-grow: 1; overflow-y: auto; padding: 24px; display: flex; flex-direction: column; gap: 16px; }
+        .chat-bubble { max-width: 85%; padding: 14px 20px; border-radius: 12px; font-size: 14px; line-height: 1.5; position: relative; }
+        .chat-self { align-self: flex-end; background: linear-gradient(135deg, var(--primary), var(--accent)); color: #ffffff; border-bottom-right-radius: 4px; }
+        .chat-other { align-self: flex-start; background: rgba(255,255,255,0.05); border: 1px solid var(--border); color: var(--text-main); border-bottom-left-radius: 4px; }
+        .chat-author { font-size: 11px; font-weight: 600; color: rgba(255,255,255,0.5); margin-bottom: 6px; letter-spacing: 0.5px; text-transform: uppercase; }
+        .chat-self .chat-author { color: rgba(255,255,255,0.8); }
+        .chat-input-area { padding: 20px; background: rgba(255,255,255,0.02); border-top: 1px solid var(--border); display: flex; gap: 12px; }
+        .chat-input-area input { flex: 1; background: rgba(0,0,0,0.4); border: 1px solid var(--border); color: white; padding: 12px 20px; border-radius: 30px; outline: none; font-size: 14px; transition: border-color 0.3s; }
+        .chat-input-area input:focus { border-color: var(--accent); }
+    </style>
+</head>
+<body>
+
+<header>
+    <a href="#" class="back-btn" id="back-link">
+        <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+        Return to Command Center
+    </a>
+</header>
+
+<div class="container">
+
+    <div class="panel">
+        <div>
+            <label style="color: var(--primary);">OPERATION DESIGNATION</label>
+            <h1 id="task-title">Loading...</h1>
+        </div>
+
+        <div class="meta-row">
+            <div class="meta-item">
+                <span>Status</span>
+                <select id="detail-status" onchange="updateTaskStatus()">
+                    <option value="Backlog">Client Backlog</option>
+                    <option value="To Do">Staging</option>
+                    <option value="In Progress">Active Ops</option>
+                    <option value="Done">Verified</option>
+                </select>
+            </div>
+            <div class="meta-item"><span>Priority</span><span class="meta-value" id="task-priority">--</span></div>
+            <div class="meta-item"><span>Complexity</span><span class="meta-value" id="task-pts">--</span></div>
+            <div class="meta-item"><span>Operatives</span><span class="meta-value" id="task-assignees" style="color: var(--accent);">--</span></div>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 12px; flex-grow: 1;">
+            <label>Operation Parameters (Description)</label>
+            <textarea id="task-desc" placeholder="No parameters defined yet. Add description here..."></textarea>
+            <button class="btn btn-primary" style="align-self: flex-start;" onclick="saveDescription()">Update Parameters</button>
+        </div>
+    </div>
+
+    <div class="panel" style="padding: 0;">
+        <div class="chat-container">
+            <div class="chat-header">
+                <div style="width: 8px; height: 8px; background: #10b981; border-radius: 50%; box-shadow: 0 0 8px #10b981;"></div>
+                SECURE COMM-LINK
+            </div>
+            <div id="chat-history" class="chat-history"></div>
+            <div class="chat-input-area">
+                <input type="text" id="chat-input" placeholder="Transmit sequence..." onkeypress="if(event.key === 'Enter') postComment()">
+                <button class="btn btn-primary" style="border-radius: 30px; padding: 10px 24px;" onclick="postComment()">Send</button>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    const API = 'http://127.0.0.1:5000/api/tasks';
+    const urlParams = new URLSearchParams(window.location.search);
+    const taskId = urlParams.get('id');
+
+    const currentUserName = sessionStorage.getItem('commanderName') || "Unknown Operative";
+    const currentRole = sessionStorage.getItem('commanderRole') || 'Operative';
+
+    if (!taskId) { alert("No task ID provided. Returning to dashboard."); window.location.href = '/dashboard.html'; }
+
+    async function loadDetails() {
+        try {
+            const res = await fetch(`${API}/single/${taskId}`);
+            const task = await res.json();
+
+            document.getElementById('task-title').innerText = task.title;
+            const statusDropdown = document.getElementById('detail-status');
+            statusDropdown.value = task.status;
+
+            if (task.status === 'Backlog' && currentRole !== 'Project Manager' && currentRole !== 'Client') {
+                statusDropdown.disabled = true; statusDropdown.title = "Insufficient clearance to alter Backlog items.";
+            } else {
+                statusDropdown.disabled = false; statusDropdown.title = "";
+            }
+
+            document.getElementById('task-priority').innerText = task.priority || "Standard";
+            document.getElementById('task-pts').innerText = `${task.storyPoints || 0} Pts`;
+
+            const descBox = document.getElementById('task-desc');
+            if (document.activeElement !== descBox) { descBox.value = task.description || ""; }
+
+            if (task.assignees && task.assignees.length > 0) { document.getElementById('task-assignees').innerText = task.assignees.join(', '); }
+            else { document.getElementById('task-assignees').innerText = "Unassigned"; }
+
+            renderChat(task.comments);
+        } catch (e) { console.error("Failed to load task:", e); }
+    }
+
+    async function updateTaskStatus() {
+        const newStatus = document.getElementById('detail-status').value;
+        try { await fetch(`${API}/update/${taskId}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status: newStatus }) }); }
+        catch (e) { console.error(e); alert("Failed to update status."); }
+    }
+
+    async function saveDescription() {
+        const newDesc = document.getElementById('task-desc').value;
+        try { await fetch(`${API}/update/${taskId}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ description: newDesc }) }); alert("Operation parameters updated successfully."); }
+        catch (e) { console.error(e); alert("Failed to update."); }
+    }
+
+    function renderChat(comments) {
+        const history = document.getElementById('chat-history'); history.innerHTML = '';
+        if(!comments || comments.length === 0) { history.innerHTML = '<div style="color: var(--text-muted); font-size: 13px; text-align: center; margin-top: 40px;">Channel secured. Awaiting first transmission.</div>'; return; }
+        comments.forEach(c => {
+            const isSelf = c.user === currentUserName; const bubbleClass = isSelf ? 'chat-self' : 'chat-other'; const date = new Date(c.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+            history.innerHTML += `<div class="chat-bubble ${bubbleClass}"><div class="chat-author">${c.user} <span style="font-weight: 400; font-size: 9px; margin-left: 6px;">${date}</span></div><div>${c.text}</div></div>`;
+        });
+        history.scrollTop = history.scrollHeight;
+    }
+
+    async function postComment() {
+        const input = document.getElementById('chat-input'); const text = input.value.trim(); if(!text) return;
+        try {
+            const res = await fetch(`${API}/${taskId}/chat`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ user: currentUserName, text: text }) });
+            const updatedTask = await res.json(); input.value = ''; renderChat(updatedTask.comments);
+        } catch (e) { console.error(e); }
+    }
+
+    window.onload = () => {
+        // --- DYNAMIC ROUTING PATCH ---
+        const backLink = document.getElementById('back-link');
+        if (currentRole === 'Client') {
+            backLink.href = '/client-dashboard.html';
+        } else {
+            backLink.href = '/dashboard.html';
+        }
+
+        loadDetails();
+        setInterval(loadDetails, 3000);
+    };
+</script>
+</body>
+</html>
